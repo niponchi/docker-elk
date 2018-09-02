@@ -1,4 +1,4 @@
-version: '2'
+version: '3'
 
 services:
 
@@ -10,9 +10,10 @@ services:
     volumes:
       - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - "${ES_PORT_REST-9200}:9200"
+      - "${ES_PORT_NODE-9300}:9300"
     restart: unless-stopped
+    env_file: .env
     environment:
       ES_JAVA_OPTS: "-Xmx256m -Xms256m"
     networks:
@@ -23,11 +24,13 @@ services:
       context: logstash/
       args:
         ELK_VERSION: $ELK_VERSION
+    env_file: .env
     volumes:
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
       - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
     ports:
-      - "5000:5000"
+      - "${LOGSTASH_PORT_GELF:-12201}:12201/udp"
+      - "${LOGSTASH_PORT:-5000}:5000"
     restart: unless-stopped
     environment:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
@@ -41,11 +44,12 @@ services:
       context: kibana/
       args:
         ELK_VERSION: $ELK_VERSION
+    env_file: .env
     volumes:
       - ./kibana/config/:/usr/share/kibana/config:ro
     restart: unless-stopped
     ports:
-      - "5601:5601"
+      - "${KIBANAPORT:-5601}:5601"
     networks:
       - elk
     depends_on:
